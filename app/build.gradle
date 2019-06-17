@@ -36,4 +36,5 @@ dependencies {
 
     // Firebase
     implementation 'com.google.firebase:firebase-core:16.0.9'
+    implementation 'com.google.firebase:firebase-auth:17.0.0'
 }
