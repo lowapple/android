@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1097046807584",
+    "firebase_url": "https://sparta-git.firebaseio.com",
+    "project_id": "sparta-git",
+    "storage_bucket": "sparta-git.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097046807584:android:676f54623190a46a",
+        "android_client_info": {
+          "package_name": "io.lowapple.sparta.git.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1097046807584-muog2hcthiigj1kqhdlmbtg69m5d55mk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9kbJJ-e1k40csDL_FC_DYZr7kcFnIG_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1097046807584-muog2hcthiigj1kqhdlmbtg69m5d55mk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
