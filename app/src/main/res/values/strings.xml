@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">sparta-git-app</string>
+    <string name="sparta_github_client_id">e7b335b69e74d5337757</string>
+    <string name="sparta_github_client_secret">0461ea26c98ba9aa95e2063fcc429b7102ea6c00</string>
 </resources>
