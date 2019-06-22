@@ -6,48 +6,38 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GithubAuthProvider
 import android.content.Intent
-import android.net.Credentials
 import android.net.Uri
-import android.os.AsyncTask
-import com.google.android.gms.tasks.OnCompleteListener
+import android.widget.Toast
 import io.lowapple.sparta.git.app.api.model.AccessToken
 import io.lowapple.sparta.git.app.api.service.GithubClient
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import org.json.JSONTokener
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 class AuthActivity : AppCompatActivity() {
 
-    private lateinit var auth: FirebaseAuth
-    private val AUTH_URL = "https://github.com/login/oauth/authorize?"
-    private lateinit var authorizeUrl: String
-    private val redirectUrl = "spartagit://authorize"
+    private lateinit var uri: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        auth = FirebaseAuth.getInstance()
-
-        val clientId = "client_id=" + getString(R.string.sparta_github_client_id)
-        authorizeUrl = "$AUTH_URL$clientId&redirect_uri=$redirectUrl"
+        uri = "${AUTH_URL}client_id=${getString(R.string.sparta_github_client_id)}&redirect_uri=$REDIRECT_URI"
     }
 
     override fun onStart() {
         super.onStart()
 
-        if (auth.currentUser == null) {
+        if (FirebaseAuth.getInstance().currentUser == null) {
             getUserCode()
+        } else {
+
         }
     }
 
@@ -55,7 +45,7 @@ class AuthActivity : AppCompatActivity() {
         super.onResume()
         if (Intent.ACTION_VIEW == intent.action) {
             val uri = intent.data
-            if (uri != null && uri.toString().startsWith(redirectUrl)) {
+            if (uri != null && uri.toString().startsWith(REDIRECT_URI)) {
                 val code = uri.getQueryParameter("code")
                 if (code != null) {
                     getAccessToken(code)
@@ -69,7 +59,7 @@ class AuthActivity : AppCompatActivity() {
             Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(
-                    authorizeUrl
+                    uri
                 )
             )
         )
@@ -81,7 +71,7 @@ class AuthActivity : AppCompatActivity() {
         }
         val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://github.com/")
+            .baseUrl(GithubClient.BASE_URI)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
@@ -95,25 +85,26 @@ class AuthActivity : AppCompatActivity() {
             override fun onResponse(call: Call<AccessToken>, response: Response<AccessToken>) {
                 val token = response.body()?.access_token
                 token?.apply {
-                    auth.signInWithCredential(GithubAuthProvider.getCredential(this))
+                    FirebaseAuth.getInstance().signInWithCredential(GithubAuthProvider.getCredential(this))
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                Log.d(TAG, "success")
+                                Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT).show()
                             } else {
-                                Log.d(TAG, "failure")
+                                Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT).show()
                             }
                         }
                 }
             }
 
             override fun onFailure(call: Call<AccessToken>, t: Throwable) {
-                t.printStackTrace()
+                Toast.makeText(applicationContext, t.message, Toast.LENGTH_SHORT).show()
             }
         })
-
     }
 
     companion object {
         private const val TAG = "AuthActivity"
+        private const val AUTH_URL = "https://github.com/login/oauth/authorize?"
+        private const val REDIRECT_URI = "spartagit://authorize"
     }
 }

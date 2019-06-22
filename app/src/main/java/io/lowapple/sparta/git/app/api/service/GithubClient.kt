@@ -15,6 +15,10 @@ interface GithubClient {
         @Field("code") code: String
     ): Call<AccessToken>
 
-    @GET("login/{user}/repos")
-    fun repos(@Path("user") user: String)
+    @GET("/user/repos")
+    fun repos()
+
+    companion object {
+        const val BASE_URI = "https://github.com/"
+    }
 }
