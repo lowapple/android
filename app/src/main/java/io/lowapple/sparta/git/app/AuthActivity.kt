@@ -22,26 +22,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 class AuthActivity : AppCompatActivity() {
 
     private lateinit var uri: String
+    private var isAuth = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_auth)
 
         uri = "${AUTH_URL}client_id=${getString(R.string.sparta_github_client_id)}&redirect_uri=$REDIRECT_URI"
-    }
 
-    override fun onStart() {
-        super.onStart()
-
-        if (FirebaseAuth.getInstance().currentUser == null) {
-            getUserCode()
-        } else {
-
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
         if (Intent.ACTION_VIEW == intent.action) {
             val uri = intent.data
             if (uri != null && uri.toString().startsWith(REDIRECT_URI)) {
@@ -50,6 +38,8 @@ class AuthActivity : AppCompatActivity() {
                     getAccessToken(code)
                 }
             }
+        } else {
+            getUserCode()
         }
     }
 
@@ -84,10 +74,20 @@ class AuthActivity : AppCompatActivity() {
             override fun onResponse(call: Call<AccessToken>, response: Response<AccessToken>) {
                 val token = response.body()?.access_token
                 token?.apply {
+
                     FirebaseAuth.getInstance().signInWithCredential(GithubAuthProvider.getCredential(this))
                         .addOnCompleteListener { task ->
+                            isAuth = false
                             if (task.isSuccessful) {
                                 Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT).show()
+
+                                startActivity(
+                                    Intent(applicationContext, RepoActivity::class.java).apply {
+                                        putExtra("token", token)
+                                    }
+                                )
+                                finish()
+
                             } else {
                                 Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT).show()
                             }
