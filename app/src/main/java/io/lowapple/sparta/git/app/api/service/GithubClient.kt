@@ -12,8 +12,7 @@ interface GithubClient {
     fun getAccessToken(
         @Field("client_id") clientId: String,
         @Field("client_secret") clientSecret: String,
-        @Field("code") code: String,
-        @Field("redirect_uri") redirectUri: String = "https://sparta-git.firebaseapp.com/__/auth/handler"
+        @Field("code") code: String
     ): Call<AccessToken>
 
     @GET("login/{user}/repos")

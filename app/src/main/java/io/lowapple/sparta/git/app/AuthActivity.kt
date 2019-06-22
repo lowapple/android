@@ -12,6 +12,8 @@ import android.os.AsyncTask
 import com.google.android.gms.tasks.OnCompleteListener
 import io.lowapple.sparta.git.app.api.model.AccessToken
 import io.lowapple.sparta.git.app.api.service.GithubClient
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONTokener
 import org.json.JSONObject
 import retrofit2.Call
@@ -74,13 +76,18 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun getAccessToken(code: String) {
+        val interceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
         val retrofit = Retrofit.Builder()
             .baseUrl("https://github.com/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .build()
-        val client = retrofit.create(GithubClient::class.java)
-        client.getAccessToken(
+        val api = retrofit.create(GithubClient::class.java)
+        api.getAccessToken(
             getString(R.string.sparta_github_client_id),
             getString(R.string.sparta_github_client_secret),
             code
