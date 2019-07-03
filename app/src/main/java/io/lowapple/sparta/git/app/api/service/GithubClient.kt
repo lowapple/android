@@ -2,6 +2,7 @@ package io.lowapple.sparta.git.app.api.service
 
 import com.google.gson.JsonObject
 import io.lowapple.sparta.git.app.api.model.AccessToken
+import io.lowapple.sparta.git.app.api.model.Repo
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.http.*
@@ -20,8 +21,9 @@ interface GithubClient {
     @Headers("Accept: application/json", "Content-Type: application/json")
     @GET("/user/repos")
     fun repos(
-        @Header("Authorization") accessToken: String
-    ): Call<String>
+        @Header("Authorization") accessToken: String,
+        @Query("affiliation") affiliation: String
+    ): Call<List<Repo>>
 
     companion object {
         const val BASE_URI = "https://github.com/"
