@@ -4,13 +4,11 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GithubAuthProvider
-import com.google.gson.JsonObject
-import io.lowapple.sparta.git.app.api.model.AccessToken
 import io.lowapple.sparta.git.app.api.model.Repo
 import io.lowapple.sparta.git.app.api.service.GithubClient
+import kotlinx.android.synthetic.main.activity_repo.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
@@ -21,6 +19,8 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 class RepoActivity : AppCompatActivity() {
+
+    private lateinit var repoAdapter: RepoAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +34,13 @@ class RepoActivity : AppCompatActivity() {
                 Intent(applicationContext, AuthActivity::class.java)
             )
             finish()
+        }
+
+        repoAdapter = RepoAdapter()
+
+        repo_recyclerview.apply {
+            this.adapter = repoAdapter
+            this.layoutManager = LinearLayoutManager(applicationContext)
         }
     }
 
@@ -53,23 +60,15 @@ class RepoActivity : AppCompatActivity() {
         val api = retrofit.create(GithubClient::class.java)
         api.repos("bearer $token", "owner").enqueue(object : Callback<List<Repo>> {
             override fun onResponse(call: Call<List<Repo>>, response: Response<List<Repo>>) {
-                Log.d(TAG, response.body().toString())
+                response.body()?.apply {
+                    repoAdapter.update(this)
+                }
             }
 
             override fun onFailure(call: Call<List<Repo>>, t: Throwable) {
 
             }
         })
-        /*
-        FirebaseAuth.getInstance()
-            .currentUser
-            ?.getIdToken(true)
-            ?.addOnCompleteListener { task ->
-                task.result?.apply {
-
-                }
-            }
-        */
     }
 
     companion object {
