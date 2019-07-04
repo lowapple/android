@@ -7,6 +7,7 @@ import com.google.firebase.auth.GithubAuthProvider
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import com.google.firebase.auth.FirebaseUser
 import io.lowapple.sparta.git.app.api.model.AccessToken
 import io.lowapple.sparta.git.app.api.service.GithubClient
 import okhttp3.OkHttpClient
@@ -22,7 +23,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 class AuthActivity : AppCompatActivity() {
 
     private lateinit var uri: String
-    private var isAuth = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,26 +73,21 @@ class AuthActivity : AppCompatActivity() {
         ).enqueue(object : Callback<AccessToken> {
             override fun onResponse(call: Call<AccessToken>, response: Response<AccessToken>) {
                 val token = response.body()?.access_token
-                token?.apply {
-
-                    FirebaseAuth.getInstance().signInWithCredential(GithubAuthProvider.getCredential(this))
+                if (token != null) {
+                    Preference.instance(applicationContext).edit().putString("token", token).apply()
+                    FirebaseAuth.getInstance().signInWithCredential(GithubAuthProvider.getCredential(token))
                         .addOnCompleteListener { task ->
-                            isAuth = false
                             if (task.isSuccessful) {
                                 Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT).show()
-
-                                startActivity(
-                                    Intent(applicationContext, RepoActivity::class.java).apply {
-                                        putExtra("token", token)
-                                    }
-                                )
-                                finish()
-
                             } else {
                                 Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT).show()
                             }
+                            finish()
                         }
+                } else {
+                    Preference.instance(applicationContext).edit().putString("token", "").apply()
                 }
+                finish()
             }
 
             override fun onFailure(call: Call<AccessToken>, t: Throwable) {
@@ -105,5 +100,8 @@ class AuthActivity : AppCompatActivity() {
         private const val TAG = "AuthActivity"
         private const val AUTH_URL = "https://github.com/login/oauth/authorize?"
         private const val REDIRECT_URI = "spartagit://authorize"
+        public const val REQUEST = 10
+        public const val SUCCESS = 1
+        public const val FAILURE = 0
     }
 }
