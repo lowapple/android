@@ -1,8 +1,11 @@
 apply plugin: 'com.android.application'
-
 apply plugin: 'kotlin-android'
-
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+
+def versionMajor = 1
+def versionMinor = 0
+def versionPatch = 0
 
 android {
     compileSdkVersion 28
@@ -10,15 +13,23 @@ android {
         applicationId "io.lowapple.sparta.git.app"
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
+        versionCode versionMajor * 100 + versionMinor * 10 + versionPatch
+        versionName "$versionMajor.$versionMinor.$versionPatch"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
+    dataBinding {
+        enabled = true
     }
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
     }
 }
 
@@ -35,6 +46,10 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
+    implementation 'androidx.multidex:multidex:2.0.1'
+
+    // Test
+    testImplementation "org.robolectric:robolectric:4.3"
 
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
@@ -43,6 +58,19 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava:2.2.9'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
 
+    // Koin
+    implementation "org.koin:koin-android:2.0.1"
+    implementation "org.koin:koin-androidx-scope:2.0.1"
+    implementation "org.koin:koin-androidx-viewmodel:2.0.1"
+    implementation "org.koin:koin-androidx-ext:2.0.1"
+
+    // Anko
+    implementation 'org.jetbrains.anko:anko-common:0.10.8'
+    implementation "org.jetbrains.anko:anko-commons:0.10.8"
+    implementation "org.jetbrains.anko:anko-sdk25:0.10.8"
+    implementation "org.jetbrains.anko:anko-appcompat-v7:0.10.8"
+    implementation "org.jetbrains.anko:anko-sdk25-coroutines:0.10.8"
+    implementation "org.jetbrains.anko:anko-appcompat-v7-coroutines:0.10.8"
 
     // Firebase
     implementation 'com.google.firebase:firebase-core:16.0.9'

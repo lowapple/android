@@ -6,12 +6,16 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GithubAuthProvider
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseUser
 import io.lowapple.sparta.git.app.api.model.AccessToken
 import io.lowapple.sparta.git.app.api.service.GithubClient
+import io.lowapple.sparta.git.app.repository.GithubClientRepository
+import io.reactivex.disposables.CompositeDisposable
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.android.inject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -23,12 +27,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 class AuthActivity : AppCompatActivity() {
 
     private lateinit var uri: String
+    private val repository: GithubClientRepository by inject()
+    private val disposables = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_auth)
 
-        uri = "${AUTH_URL}client_id=${getString(R.string.sparta_github_client_id)}&redirect_uri=$REDIRECT_URI"
+        uri =
+            "${AUTH_URL}client_id=${getString(R.string.sparta_github_client_id)}&redirect_uri=$REDIRECT_URI"
 
         if (Intent.ACTION_VIEW == intent.action) {
             val uri = intent.data
@@ -55,45 +62,35 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun getAccessToken(code: String) {
-        val interceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-        val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
-        val retrofit = Retrofit.Builder()
-            .baseUrl(GithubClient.BASE_URI)
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-            .build()
-        val api = retrofit.create(GithubClient::class.java)
-        api.getAccessToken(
-            getString(R.string.sparta_github_client_id),
-            getString(R.string.sparta_github_client_secret),
-            code
-        ).enqueue(object : Callback<AccessToken> {
-            override fun onResponse(call: Call<AccessToken>, response: Response<AccessToken>) {
-                val token = response.body()?.access_token
-                if (token != null) {
-                    Preference.instance(applicationContext).edit().putString("token", token).apply()
-                    FirebaseAuth.getInstance().signInWithCredential(GithubAuthProvider.getCredential(token))
+        disposables.add(
+            repository.getAccessToken(code)
+                .subscribe {
+                    // Token 저장
+                    Preference.instance(applicationContext).edit()
+                        .putString("token", it.access_token).apply()
+
+                    disposables.add(
+                        repository.getUser(it.access_token).subscribe {
+                            Log.d(TAG, it.toString())
+                        }
+                    )
+
+                    // 유저 등록
+                    FirebaseAuth.getInstance()
+                        .signInWithCredential(GithubAuthProvider.getCredential(it.access_token))
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT)
+                                    .show()
+                                startActivity(Intent(this@AuthActivity, CommitActivity::class.java))
                             } else {
-                                Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                             finish()
                         }
-                } else {
-                    Preference.instance(applicationContext).edit().putString("token", "").apply()
                 }
-                finish()
-            }
-
-            override fun onFailure(call: Call<AccessToken>, t: Throwable) {
-                Toast.makeText(applicationContext, t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+        )
     }
 
     companion object {
