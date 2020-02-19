@@ -1,38 +1,37 @@
 package io.lowapple.sparta.git.app
 
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GithubAuthProvider
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import android.os.Bundle
 import android.widget.Toast
-import com.google.firebase.auth.FirebaseUser
-import io.lowapple.sparta.git.app.api.model.AccessToken
-import io.lowapple.sparta.git.app.api.service.GithubClient
+import androidx.appcompat.app.AppCompatActivity
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Observer
+import io.lowapple.sparta.git.app.databinding.ActivityAuthBinding
 import io.lowapple.sparta.git.app.repository.GithubClientRepository
 import io.reactivex.disposables.CompositeDisposable
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.jetbrains.anko.startActivity
 import org.koin.android.ext.android.inject
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
-
 
 class AuthActivity : AppCompatActivity() {
 
     private lateinit var uri: String
-    private val repository: GithubClientRepository by inject()
-    private val disposables = CompositeDisposable()
+    private lateinit var binding: ActivityAuthBinding
+    private val preference: Preference by inject()
+    private val viewModel: AuthViewModel by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_auth)
+
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_auth)
+        binding.lifecycleOwner = this
+        binding.viewModel = viewModel
+
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.title = "로그인화면"
 
         uri =
             "${AUTH_URL}client_id=${getString(R.string.sparta_github_client_id)}&redirect_uri=$REDIRECT_URI"
@@ -46,8 +45,29 @@ class AuthActivity : AppCompatActivity() {
                 }
             }
         } else {
-            getUserCode()
+            if (preference.token != null) {
+                main()
+            } else {
+                getUserCode()
+            }
         }
+
+        // 로그인
+        viewModel.isLoggined.observe(this, Observer {
+            if (it) {
+                Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT).show()
+                //
+                main()
+            } else {
+                Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    // 메인화면으로 이동
+    private fun main() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 
     private fun getUserCode() {
@@ -62,35 +82,9 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun getAccessToken(code: String) {
-        disposables.add(
-            repository.getAccessToken(code)
-                .subscribe {
-                    // Token 저장
-                    Preference.instance(applicationContext).edit()
-                        .putString("token", it.access_token).apply()
-
-                    disposables.add(
-                        repository.getUser(it.access_token).subscribe {
-                            Log.d(TAG, it.toString())
-                        }
-                    )
-
-                    // 유저 등록
-                    FirebaseAuth.getInstance()
-                        .signInWithCredential(GithubAuthProvider.getCredential(it.access_token))
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                Toast.makeText(applicationContext, "로그인 성공", Toast.LENGTH_SHORT)
-                                    .show()
-                                startActivity(Intent(this@AuthActivity, CommitActivity::class.java))
-                            } else {
-                                Toast.makeText(applicationContext, "로그인 실패", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                            finish()
-                        }
-                }
-        )
+        CoroutineScope(Dispatchers.Main).launch {
+            viewModel.getAccessToken(code)
+        }
     }
 
     companion object {

@@ -1,14 +1,15 @@
 package io.lowapple.sparta.git.app
 
 import android.content.Context
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import io.lowapple.sparta.git.app.api.service.GithubClient
+import io.lowapple.sparta.git.app.db.AppDatabase
 import io.lowapple.sparta.git.app.repository.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
 fun provideInterceptor(): HttpLoggingInterceptor {
@@ -21,16 +22,21 @@ fun provideApiClient(interceptor: HttpLoggingInterceptor): OkHttpClient =
     OkHttpClient().newBuilder().addInterceptor(interceptor).build()
 
 fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit =
-    Retrofit.Builder().baseUrl("https://api.github.com/")
+    Retrofit
+        .Builder()
+        .baseUrl("https://api.github.com/")
         .client(okHttpClient)
-        .addConverterFactory(
-            GsonConverterFactory.create()
-        )
-        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(CoroutineCallAdapterFactory())
         .build()
 
 fun provideRegisterService(retrofit: Retrofit): GithubClient =
     retrofit.create(GithubClient::class.java)
+
+val databaseModule = module {
+    single { AppDatabase.getAppDatabase(get()) }
+    single { get<AppDatabase>().getRepoDao() }
+}
 
 val networkModules = module {
     factory { provideInterceptor() }
@@ -40,7 +46,9 @@ val networkModules = module {
 }
 
 val viewModelModules = module {
-
+    viewModel { AuthViewModel(get(), get()) }
+    viewModel { MainViewModel(get(), get()) }
+    viewModel { RepoViewModel(get(), get(), get()) }
 }
 
 val repositoryModules = module {
@@ -53,6 +61,8 @@ val repositoryModules = module {
             get()
         )
     }
+
+    factory { Preference(get()) }
 }
 
-val appModule = listOf(networkModules, viewModelModules, repositoryModules)
+val appModule = listOf(networkModules, databaseModule, repositoryModules, viewModelModules)

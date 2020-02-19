@@ -18,17 +18,17 @@ interface GithubClient {
     @Headers("Accept: application/json")
     @POST("/login/oauth/access_token")
     @FormUrlEncoded
-    fun getAccessToken(
+    suspend fun getAccessToken(
         @Field("client_id") clientId: String,
         @Field("client_secret") clientSecret: String,
         @Field("code") code: String
-    ): Observable<AccessToken>
+    ): AccessToken
 
     @Headers("Accept: application/json", "Content-Type: application/json")
     @GET("/user")
-    fun getUser(
+    suspend fun getUser(
         @Header("Authorization") accessToken: String
-    ): Observable<User>
+    ): User
 
 
     /**
@@ -36,18 +36,18 @@ interface GithubClient {
      */
     @Headers("Accept: application/json", "Content-Type: application/json")
     @GET("/user/repos")
-    fun repositories(
+    suspend fun repositories(
         @Header("Authorization") accessToken: String,
         @Query("affiliation") affiliation: String
-    ): Observable<List<Repo>>
+    ): List<Repo>
 
     /**
      * Github 의 사용자 Commit 목록을 얻어오는 API
      */
     @GET("/repos/{owner}/{repo}/commits")
-    fun commits(
+    suspend fun commits(
         @Path("owner") owner: String, @Path("repo") repo: String
-    ): Observable<List<RepoCommit>>
+    ): List<RepoCommit>
 
     companion object {
         const val BASE_URI = "https://github.com/"

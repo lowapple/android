@@ -12,10 +12,7 @@ import retrofit2.Response
 class GithubRepositoryImpl(
     private val githubClient: GithubClient
 ) : GithubRepository {
-    override fun repositories(token: String): Observable<List<Repo>> {
-        return githubClient
-            .repositories("bearer $token", "owner")
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+    override suspend fun repositories(token: String): List<Repo> {
+        return githubClient.repositories("bearer $token", "owner")
     }
 }

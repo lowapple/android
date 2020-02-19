@@ -6,6 +6,10 @@ import android.os.Bundle
 import android.util.Log
 import io.lowapple.sparta.git.app.repository.GithubCommitRepository
 import io.reactivex.disposables.CompositeDisposable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 class CommitActivity : AppCompatActivity() {
@@ -20,13 +24,11 @@ class CommitActivity : AppCompatActivity() {
         val pref = Preference.instance(this)
         val token = pref.getString("token", "")
         if (token != "") {
-            disposables.add(
-                repository
-                    .commits("lowapple", "sparta-git-app")
-                    .subscribe {
-                        Log.d(TAG, it.toString())
-                    }
-            )
+            CoroutineScope(Dispatchers.Main).launch {
+                repository.commits("lowapple", "sparta-git-app").apply {
+                    Log.d(TAG, this.toString())
+                }
+            }
         } else {
             startActivity(Intent(applicationContext, AuthActivity::class.java))
         }
